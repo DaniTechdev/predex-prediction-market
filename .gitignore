@@ -1,0 +1,46 @@
+.anchor
+.DS_Store
+target
+**/*.rs.bk
+node_modules
+test-ledger
+.yarn
+.surfpool
+
+# Rust / Anchor
+target/
+**/target/
+*.so
+*.dSYM/
+**/**.rs.bk
+
+# Solana
+test-ledger/
+validator.log
+
+# Node
+node_modules/
+.env
+*.log
+
+# IDE
+.vscode/
+.idea/
+
+# Anchor
+.anchor/
+**/.anchor/
+
+# OS
+.DS_Store
+thumbs.db
+
+# Build artifacts
+**/target/
+**/idl/
+**/typegen/
+
+# Local keys (IMPORTANT - don't commit!)
+**/keypair.json
+**/id.json
+**/.config/
