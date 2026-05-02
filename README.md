@@ -37,3 +37,4 @@ PREDEx is a decentralized prediction market platform where users trade YES/NO sh
 ```bash
 anchor build# predex-prediction-market
 # predex-prediction-market
+# predex-prediction-market
