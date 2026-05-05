@@ -176,7 +176,32 @@ to administer.
 
 ---
 
-## 4. Sanity Commands
+## 4. Gotcha: keep the frontend IDL in sync after every `anchor build`
+
+`anchor build` regenerates `target/idl/predex.json` and `target/types/predex.ts`.
+The frontend imports from its **own copy** at `app/src/lib/idl/`, not from
+`target/`. After every program change you must re-copy and commit, or the
+frontend will be talking to an outdated IDL (silent type drift, broken
+account decoding, deploys that compile but crash at runtime).
+
+```bash
+# from repo root, after any anchor build
+cp target/idl/predex.json app/src/lib/idl/predex.json
+cp target/types/predex.ts app/src/lib/idl/predex.ts
+git add app/src/lib/idl/ && git commit -m "Sync frontend IDL"
+```
+
+The root `.gitignore` has `**/idl/` to keep `target/idl/` out of git, with an
+explicit allowlist for `app/src/lib/idl/**` so the frontend copy is tracked.
+**Don't remove that allowlist** — Vercel needs the IDL JSON in the repo to
+build the frontend.
+
+A future polish item is wiring this into `anchor build` via a `package.json`
+postbuild hook so it never gets forgotten.
+
+---
+
+## 5. Sanity Commands
 
 ```bash
 # program
