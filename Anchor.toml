@@ -12,7 +12,7 @@ predex = "C9v9UddDthTPnZRuwmBpkARwJooFrzgGHZ5MzZJYXUGb"
 predex = "C9v9UddDthTPnZRuwmBpkARwJooFrzgGHZ5MzZJYXUGb"
 
 [provider]
-cluster = "localnet"
+cluster = "devnet"
 wallet = "~/.config/solana/id.json"
 
 [scripts]
