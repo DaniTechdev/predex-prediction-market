@@ -1,0 +1,142 @@
+@import "tailwindcss";
+
+:root {
+  --background: 6 8 14;
+  --background-elevated: 14 17 28;
+  --background-overlay: 22 26 40;
+  --foreground: 240 242 248;
+  --foreground-muted: 156 163 184;
+  --foreground-faint: 100 108 130;
+  --border: 30 34 50;
+  --border-strong: 50 56 80;
+
+  --accent: 153 69 255;
+  --accent-glow: 153 69 255;
+  --success: 20 241 149;
+  --success-glow: 20 241 149;
+  --danger: 248 113 113;
+  --warning: 250 204 21;
+
+  --yes: 20 241 149;
+  --no: 248 113 113;
+
+  --radius: 14px;
+  --radius-sm: 10px;
+}
+
+@theme inline {
+  --color-background: rgb(var(--background));
+  --color-background-elevated: rgb(var(--background-elevated));
+  --color-background-overlay: rgb(var(--background-overlay));
+  --color-foreground: rgb(var(--foreground));
+  --color-foreground-muted: rgb(var(--foreground-muted));
+  --color-foreground-faint: rgb(var(--foreground-faint));
+  --color-border: rgb(var(--border));
+  --color-border-strong: rgb(var(--border-strong));
+  --color-accent: rgb(var(--accent));
+  --color-success: rgb(var(--success));
+  --color-danger: rgb(var(--danger));
+  --color-warning: rgb(var(--warning));
+  --color-yes: rgb(var(--yes));
+  --color-no: rgb(var(--no));
+
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+
+  --radius-card: var(--radius);
+}
+
+* {
+  border-color: rgb(var(--border));
+}
+
+html,
+body {
+  background: rgb(var(--background));
+  color: rgb(var(--foreground));
+  font-family: var(--font-sans), Inter, system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  background-image:
+    radial-gradient(ellipse 80% 50% at 50% -20%, rgb(153 69 255 / 0.15), transparent 60%),
+    radial-gradient(ellipse 60% 40% at 80% 110%, rgb(20 241 149 / 0.08), transparent 60%);
+  background-attachment: fixed;
+  min-height: 100dvh;
+}
+
+::selection {
+  background: rgb(153 69 255 / 0.3);
+  color: rgb(var(--foreground));
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgb(var(--border-strong));
+  border-radius: 6px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgb(var(--foreground-faint));
+}
+
+.wallet-adapter-modal-wrapper {
+  background: rgb(var(--background-elevated)) !important;
+  border: 1px solid rgb(var(--border-strong));
+  border-radius: var(--radius);
+}
+.wallet-adapter-modal-button-close {
+  background: rgb(var(--background-overlay)) !important;
+}
+.wallet-adapter-modal-title {
+  color: rgb(var(--foreground)) !important;
+}
+.wallet-adapter-button {
+  background: linear-gradient(135deg, rgb(153 69 255), rgb(123 49 219)) !important;
+  border-radius: 10px !important;
+  font-weight: 600 !important;
+  height: 42px !important;
+  font-family: inherit !important;
+  transition: transform 120ms ease, box-shadow 120ms ease !important;
+}
+.wallet-adapter-button:not([disabled]):hover {
+  background: linear-gradient(135deg, rgb(173 99 255), rgb(143 69 235)) !important;
+  transform: translateY(-1px);
+  box-shadow: 0 8px 24px -8px rgb(153 69 255 / 0.6);
+}
+.wallet-adapter-button[disabled] {
+  opacity: 0.5;
+}
+.wallet-adapter-modal-list {
+  margin: 0 !important;
+}
+.wallet-adapter-modal-list .wallet-adapter-button {
+  background: rgb(var(--background-overlay)) !important;
+  color: rgb(var(--foreground)) !important;
+}
+.wallet-adapter-modal-list .wallet-adapter-button:hover {
+  background: rgb(var(--border-strong)) !important;
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    rgb(var(--background-elevated)) 0%,
+    rgb(var(--background-overlay)) 50%,
+    rgb(var(--background-elevated)) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.6s infinite linear;
+}
