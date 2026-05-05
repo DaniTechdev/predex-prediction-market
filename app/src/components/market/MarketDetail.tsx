@@ -1,6 +1,5 @@
 "use client";
 
-import { useMemo } from "react";
 import Link from "next/link";
 import {
   Clock,
@@ -68,16 +67,14 @@ export function MarketDetail({ marketAddress }: { marketAddress: string }) {
   const isExpired = endTs < Math.floor(Date.now() / 1000);
   const isResolved = market.resolved;
 
-  const status = useMemo(() => {
-    if (isResolved) {
-      return {
+  const status: { label: string; tone: "yes" | "no" | "warning" } = isResolved
+    ? {
         label: market.winningOutcome === 0 ? "Resolved · YES" : "Resolved · NO",
-        tone: market.winningOutcome === 0 ? ("yes" as const) : ("no" as const),
-      };
-    }
-    if (isExpired) return { label: "Awaiting resolution", tone: "warning" as const };
-    return { label: "Active", tone: "yes" as const };
-  }, [isResolved, isExpired, market.winningOutcome]);
+        tone: market.winningOutcome === 0 ? "yes" : "no",
+      }
+    : isExpired
+      ? { label: "Awaiting resolution", tone: "warning" }
+      : { label: "Active", tone: "yes" };
 
   return (
     <div className="mx-auto max-w-6xl px-4 sm:px-6 py-8 sm:py-10">
