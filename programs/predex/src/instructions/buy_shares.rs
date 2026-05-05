@@ -1,5 +1,7 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Token, TokenAccount, Transfer};
+
+use crate::errors::CustomError;
 use crate::state::{Market, MarketPool, Position};
 
 #[derive(Accounts)]
@@ -7,20 +9,17 @@ use crate::state::{Market, MarketPool, Position};
 pub struct BuyShares<'info> {
     #[account(mut)]
     pub user: Signer<'info>,
-    
-    #[account(
-        mut,
-        constraint = market.is_active(Clock::get()?.unix_timestamp)
-    )]
+
+    #[account(mut)]
     pub market: Account<'info, Market>,
-    
+
     #[account(
         mut,
         seeds = [b"pool", market.key().as_ref()],
-        bump
+        bump = pool.bump
     )]
     pub pool: Account<'info, MarketPool>,
-    
+
     #[account(
         init_if_needed,
         payer = user,
@@ -29,94 +28,89 @@ pub struct BuyShares<'info> {
         bump
     )]
     pub position: Account<'info, Position>,
-    
+
     #[account(
         mut,
         constraint = user_usdc_account.owner == user.key()
     )]
     pub user_usdc_account: Account<'info, TokenAccount>,
-    
+
     #[account(
         mut,
-        constraint = pool_usdc_vault.owner == program_id
+        seeds = [b"vault", market.key().as_ref()],
+        bump = pool.vault_bump
     )]
     pub pool_usdc_vault: Account<'info, TokenAccount>,
-    
+
     pub token_program: Program<'info, Token>,
     pub system_program: Program<'info, System>,
 }
 
 pub fn handler(ctx: Context<BuyShares>, outcome: u8, amount: u64) -> Result<()> {
-    require!(outcome == 0 || outcome == 1, ErrorCode::InvalidOutcome);
-    require!(amount > 0, ErrorCode::InvalidAmount);
-    
-    let pool = &mut ctx.accounts.pool;
-    let position = &mut ctx.accounts.position;
-    let clock = Clock::get()?;
-    
-    // Calculate shares to mint
-    let shares = pool.calculate_shares_from_usdc(amount, outcome);
-    require!(shares > 0, ErrorCode::InsufficientLiquidity);
-    
-    // Update pool based on outcome
-    match outcome {
-        0 => {
-            pool.yes_shares += shares;
-            pool.last_price_yes = pool.calculate_price(0);
+    require!(outcome == 0 || outcome == 1, CustomError::InvalidOutcome);
+    require!(amount > 0, CustomError::InvalidAmount);
+
+    let clock_ts = Clock::get()?.unix_timestamp;
+    require!(
+        ctx.accounts.market.is_active(clock_ts),
+        CustomError::MarketNotActive
+    );
+
+    let shares = ctx
+        .accounts
+        .pool
+        .calculate_shares_from_usdc(amount, outcome);
+    require!(shares > 0, CustomError::InsufficientLiquidity);
+
+    {
+        let pool = &mut ctx.accounts.pool;
+        match outcome {
+            0 => pool.yes_shares = pool.yes_shares.saturating_add(shares),
+            1 => pool.no_shares = pool.no_shares.saturating_add(shares),
+            _ => {}
         }
-        1 => {
-            pool.no_shares += shares;
-            pool.last_price_no = pool.calculate_price(1);
-        }
-        _ => {}
+        pool.liquidity_usdc = pool.liquidity_usdc.saturating_add(amount);
+        pool.last_price_yes = pool.calculate_price(0);
+        pool.last_price_no = pool.calculate_price(1);
     }
-    pool.liquidity_usdc += amount;
-    
-    // Update user position
-    if position.user == Pubkey::default() {
-        position.user = ctx.accounts.user.key();
-        position.market = ctx.accounts.market.key();
-        position.yes_amount = 0;
-        position.no_amount = 0;
-        position.total_spent_yes = 0;
-        position.total_spent_no = 0;
-    }
-    
-    match outcome {
-        0 => {
-            position.yes_amount += shares;
-            position.total_spent_yes += amount;
+
+    {
+        let position = &mut ctx.accounts.position;
+        if position.user == Pubkey::default() {
+            position.user = ctx.accounts.user.key();
+            position.market = ctx.accounts.market.key();
+            position.yes_amount = 0;
+            position.no_amount = 0;
+            position.total_spent_yes = 0;
+            position.total_spent_no = 0;
+            position.claimed = false;
+            position.bump = ctx.bumps.position;
         }
-        1 => {
-            position.no_amount += shares;
-            position.total_spent_no += amount;
+
+        match outcome {
+            0 => {
+                position.yes_amount = position.yes_amount.saturating_add(shares);
+                position.total_spent_yes = position.total_spent_yes.saturating_add(amount);
+            }
+            1 => {
+                position.no_amount = position.no_amount.saturating_add(shares);
+                position.total_spent_no = position.total_spent_no.saturating_add(amount);
+            }
+            _ => {}
         }
-        _ => {}
+        position.last_updated = clock_ts;
     }
-    position.last_updated = clock.unix_timestamp;
-    
-    // Transfer USDC from user to pool vault
-    let transfer_instruction = Transfer {
+
+    let transfer_ix = Transfer {
         from: ctx.accounts.user_usdc_account.to_account_info(),
         to: ctx.accounts.pool_usdc_vault.to_account_info(),
         authority: ctx.accounts.user.to_account_info(),
     };
-    let cpi_ctx = CpiContext::new(ctx.accounts.token_program.to_account_info(), transfer_instruction);
+    let cpi_ctx = CpiContext::new(ctx.accounts.token_program.to_account_info(), transfer_ix);
     token::transfer(cpi_ctx, amount)?;
-    
-    // Update market volume
-    let market = &mut ctx.accounts.market;
-    market.total_volume += amount;
-    
-    Ok(())
-}
 
-#[error_code]
-pub enum ErrorCode {
-    #[msg("Outcome must be 0 (YES) or 1 (NO)")]
-    InvalidOutcome,
-    #[msg("Amount must be greater than 0")]
-    InvalidAmount,
-    #[msg("Not enough liquidity in pool")]
-    InsufficientLiquidity,
+    let market = &mut ctx.accounts.market;
+    market.total_volume = market.total_volume.saturating_add(amount);
+
+    Ok(())
 }

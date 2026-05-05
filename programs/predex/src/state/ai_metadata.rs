@@ -10,4 +10,5 @@ pub struct AiMetadata {
     pub sentiment: i8,               // -100 to 100
     pub last_updated: i64,
     pub ai_recommendation: u8,       // 0=BUY_YES, 1=BUY_NO, 2=HOLD
+    pub bump: u8,
 }

@@ -1,90 +1,87 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Token, TokenAccount, Transfer};
+
+use crate::errors::CustomError;
 use crate::state::{Market, MarketPool, Position};
 
 #[derive(Accounts)]
 pub struct ClaimWinnings<'info> {
     #[account(mut)]
     pub user: Signer<'info>,
-    
-    #[account(
-        mut,
-        constraint = market.resolved == true
-    )]
+
+    #[account(constraint = market.resolved @ CustomError::MarketNotResolved)]
     pub market: Account<'info, Market>,
-    
+
     #[account(
         mut,
         seeds = [b"pool", market.key().as_ref()],
-        bump
+        bump = pool.bump
     )]
     pub pool: Account<'info, MarketPool>,
-    
+
     #[account(
         mut,
         seeds = [b"position", user.key().as_ref(), market.key().as_ref()],
-        bump,
-        constraint = position.user == user.key()
+        bump = position.bump,
+        constraint = position.user == user.key() @ CustomError::Unauthorized,
+        constraint = !position.claimed @ CustomError::AlreadyClaimed
     )]
     pub position: Account<'info, Position>,
-    
+
     #[account(
         mut,
         constraint = user_usdc_account.owner == user.key()
     )]
     pub user_usdc_account: Account<'info, TokenAccount>,
-    
+
     #[account(
         mut,
-        constraint = pool_usdc_vault.owner == program_id
+        seeds = [b"vault", market.key().as_ref()],
+        bump = pool.vault_bump
     )]
     pub pool_usdc_vault: Account<'info, TokenAccount>,
-    
+
     pub token_program: Program<'info, Token>,
 }
 
 pub fn handler(ctx: Context<ClaimWinnings>) -> Result<()> {
-    let market = &ctx.accounts.market;
-    let pool = &ctx.accounts.pool;
-    let position = &ctx.accounts.position;
-    
-    // Calculate payout
-    let payout = position.get_payout(market.winning_outcome, pool);
-    require!(payout > 0, ErrorCode::NothingToClaim);
-    
-    // Zero out position (prevent double claim)
-    let position_acc = &mut ctx.accounts.position;
-    if market.winning_outcome == 0 {
-        position_acc.yes_amount = 0;
-        position_acc.total_spent_yes = 0;
-    } else if market.winning_outcome == 1 {
-        position_acc.no_amount = 0;
-        position_acc.total_spent_no = 0;
+    let winning_outcome = ctx.accounts.market.winning_outcome;
+    let market_key = ctx.accounts.market.key();
+    let pool_bump = ctx.accounts.pool.bump;
+
+    let payout = ctx
+        .accounts
+        .position
+        .get_payout(winning_outcome, &ctx.accounts.pool);
+    require!(payout > 0, CustomError::NothingToClaim);
+    require!(
+        ctx.accounts.pool.liquidity_usdc >= payout,
+        CustomError::InsufficientLiquidity
+    );
+
+    {
+        let position = &mut ctx.accounts.position;
+        position.claimed = true;
     }
-    
-    // Transfer USDC from pool to user
-    let transfer_instruction = Transfer {
+
+    {
+        let pool = &mut ctx.accounts.pool;
+        pool.liquidity_usdc = pool.liquidity_usdc.saturating_sub(payout);
+    }
+
+    let signer_seeds: &[&[&[u8]]] = &[&[b"pool", market_key.as_ref(), &[pool_bump]]];
+
+    let transfer_ix = Transfer {
         from: ctx.accounts.pool_usdc_vault.to_account_info(),
         to: ctx.accounts.user_usdc_account.to_account_info(),
-        authority: ctx.accounts.pool_usdc_vault.to_account_info(),
+        authority: ctx.accounts.pool.to_account_info(),
     };
-    
-    // Pool vault is a PDA, so it signs
-    let seeds = &[b"pool", market.key().as_ref(), &[ctx.bumps.pool]];
-    let signer = &[&seeds[..]];
-    
     let cpi_ctx = CpiContext::new_with_signer(
         ctx.accounts.token_program.to_account_info(),
-        transfer_instruction,
-        signer,
+        transfer_ix,
+        signer_seeds,
     );
     token::transfer(cpi_ctx, payout)?;
-    
-    Ok(())
-}
 
-#[error_code]
-pub enum ErrorCode {
-    #[msg("No winnings to claim")]
-    NothingToClaim,
+    Ok(())
 }
