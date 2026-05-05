@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { usePathname } from "next/navigation";
 import { Menu, X, TrendingUp } from "lucide-react";
-import { WalletButton } from "./WalletButton";
+import { ConnectButton } from "./ConnectButton";
 import { cn } from "@/lib/cn";
 import { SITE } from "@/lib/config";
 
@@ -51,7 +51,7 @@ export function Navbar() {
           </nav>
 
           <div className="flex items-center gap-2">
-            <WalletButton />
+            <ConnectButton />
             <button
               type="button"
               className="md:hidden size-10 rounded-md flex items-center justify-center text-foreground-muted hover:text-foreground hover:bg-background-overlay"

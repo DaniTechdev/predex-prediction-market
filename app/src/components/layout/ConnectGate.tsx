@@ -3,7 +3,7 @@
 import { useWallet } from "@solana/wallet-adapter-react";
 import { Wallet } from "lucide-react";
 import { Card } from "@/components/ui/Card";
-import { WalletButton } from "./WalletButton";
+import { ConnectButton } from "./ConnectButton";
 
 export function ConnectGate({ children }: { children: React.ReactNode }) {
   const { connected, connecting } = useWallet();
@@ -24,7 +24,7 @@ export function ConnectGate({ children }: { children: React.ReactNode }) {
             You need a Solana wallet to interact with this market.
           </p>
         </div>
-        <WalletButton />
+        <ConnectButton />
       </Card>
     );
   }
