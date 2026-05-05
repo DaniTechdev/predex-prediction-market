@@ -39,6 +39,9 @@ thumbs.db
 **/target/
 **/idl/
 **/typegen/
+# Frontend ships a copy of the program IDL — track it.
+!app/src/lib/idl/
+!app/src/lib/idl/**
 
 # Local keys (IMPORTANT - don't commit!)
 **/keypair.json
