@@ -107,82 +107,87 @@ payout_per_winning_share = liquidity_usdc / winning_total_shares (after resoluti
 
 ---
 
-## 2. Current Status (audit of the repo)
+## 2. Current Status
 
-### What exists & works
-- ✅ Workspace `Cargo.toml` (root) is correct.
-- ✅ `programs/predex/Cargo.toml` already on `anchor-lang 0.30.1` / `anchor-spl 0.30.1` (the brief was wrong — it is **not** `1.0.0`).
-- ✅ `state/market.rs`, `state/pool.rs`, `state/position.rs`, `state/ai_metadata.rs` have reasonable starting structs.
-- ✅ `instructions/create_market.rs`, `buy_shares.rs`, `claim_winnings.rs` have skeleton handlers.
+See `DEPLOYMENT.md` for live program/USDC/wallet addresses on devnet.
 
-### What's broken (must fix to compile)
-- ❌ `src/state.rs` is empty — but `lib.rs` declares `pub mod state;`. No `state/mod.rs` either, so `state::{Market, MarketPool, ...}` cannot resolve.
-- ❌ `src/instructions/` has no `mod.rs` either; `lib.rs` declares `pub mod instructions;` but cannot find children.
-- ❌ `instructions/sell_shares.rs` and `instructions/resolve_market.rs` are **empty (0 bytes)**.
-- ❌ `instructions/update_ai_confidence.rs` doesn't exist; `lib.rs` calls it.
-- ❌ `create_market.rs` references undefined `market_count`.
-- ❌ `pool_usdc_vault.owner == program_id` constraint is wrong (TokenAccount.owner is the SPL authority, not Solana program owner). Needs `pool` PDA as authority.
-- ❌ `claim_winnings.rs` signs as the pool *data* PDA but tries to transfer from the *vault* token account → need a vault PDA + correct seeds + bump.
-- ❌ `Position::get_payout` returns raw share count, overpaying by 1e6×.
-- ❌ Test file `tests/test_initialize.rs` imports `litesvm`/`solana-message`/etc. that aren't in `Cargo.toml`, and calls a non-existent `Initialize` instruction.
-- ❌ `Anchor.toml` `test` script is `cargo test`; should be the default `yarn run ts-mocha ...` or `anchor test --skip-local-validator`.
+### Phase 1 — compile-clean program ✅
+- `state/mod.rs` and `instructions.rs` re-export sub-modules.
+- `market_count` ghost variable replaced with explicit `market_id: u64` ix arg.
+- `sell_shares`, `resolve_market`, `update_ai_confidence` handlers implemented.
+- All errors consolidated in `errors.rs`.
+- Vault is a `["vault", market]` PDA token account with pool PDA as authority;
+  `sell_shares` / `claim_winnings` sign with the pool seeds correctly.
+- `Position::get_payout` uses the proportional pot formula.
+- `MarketPool` has `VIRTUAL_LIQUIDITY` so the empty-side bootstrap works.
 
-### Not started
-- ⏹ `update_ai_confidence` handler.
-- ⏹ Custom error codes consolidated in one module.
-- ⏹ Events (`MarketCreatedEvent`, `SharesBoughtEvent`, …).
-- ⏹ TS integration tests (`tests/predex.ts`).
-- ⏹ Frontend app/ folder is empty.
-- ⏹ Devnet deployment.
+### Phase 2 — TypeScript test suite ✅ (local-validator only)
+- `tests/predex.ts` covers create / buy / sell / resolve / claim / AI lifecycle,
+  plus the negative paths (double-claim, double-resolve, non-creator, end_time).
+- `Anchor.toml` test script switched to `ts-mocha`.
+- Old `programs/predex/tests/test_initialize.rs` is stale and should be deleted.
+- **Not run on devnet** — devnet integration test would pollute on-chain state
+  with throwaway markets. We rely on the local-validator suite + frontend
+  smoke-testing for end-to-end coverage.
+
+### Phase 3 — Devnet deploy ✅
+- Program live at `C9v9UddDthTPnZRuwmBpkARwJooFrzgGHZ5MzZJYXUGb`.
+- Mock USDC mint: `3VWGZuhBq23QoCvYquJ7JNRC1XfN7b12KLWCWJgiD3My` (6 decimals).
+- `Anchor.toml` `[provider]` flipped to `cluster = "devnet"`.
+
+### Phase 4 — Frontend ✅ v1 shipped
+- Next.js 16 + React 19 + Tailwind 4 + TypeScript under `app/`.
+- Pages: `/` (markets list + hero), `/create`, `/market/[market]`, `/portfolio`.
+- Wallet adapter wired with Phantom, Solflare, and Solana Mobile Wallet
+  Adapter — mobile users connect via OS deep-link, not just an extension.
+- Anchor program client + React Query for cached on-chain reads.
+- `CreatorPanel` (resolve + AI update) auto-renders on the market detail
+  page when the connected wallet matches `market.creator` — no separate
+  admin route, since the program has no global admin role.
+
+### Not started / next polish
+- ⏹ Frontend deploy (Vercel — single command once you're ready).
+- ⏹ Better Anchor error parsing in toasts (currently shows raw sim errors).
+- ⏹ "Mint test USDC to me" button (shortcut for handing out devnet USDC).
+- ⏹ Search / filter / sort on the markets list.
+- ⏹ Off-chain AI oracle script (Node/route handler that polls market
+  questions, calls an LLM, signs `update_ai_confidence`).
+- ⏹ Events (`MarketCreatedEvent`, `SharesBoughtEvent`, …) for clean
+  indexer integration.
 
 ---
 
-## 3. Roadmap to Devnet + Frontend
+## 3. Permission model (so future-you doesn't get confused)
 
-### Phase 1 — Make it compile (program-only)
-1. Create `src/state/mod.rs` re-exporting all sub-modules; delete or empty `src/state.rs`.
-2. Create `src/instructions/mod.rs` re-exporting all handler modules.
-3. Replace `market_count` usage with either a `Config` account or an explicit `market_id: u64` instruction arg. Use the latter — simpler.
-4. Implement `sell_shares.rs`, `resolve_market.rs`, `update_ai_confidence.rs`.
-5. Add a single `errors.rs` with all `CustomError` variants; remove the per-file duplicate `ErrorCode` enums.
-6. Fix vault account: declare a `["vault", market]` PDA token account, set its authority to the pool PDA in `create_market`, and sign with the pool PDA in `claim_winnings`/`sell_shares`.
-7. Fix `Position::get_payout` to use the proportional pot formula.
-8. `anchor build` cleanly.
+There is **no global admin role** on Predex.
 
-### Phase 2 — Tests
-9. Delete `programs/predex/tests/test_initialize.rs` (it's litesvm-based and references a missing `Initialize` ix). Replace with a TypeScript suite at `tests/predex.ts` driven by `anchor test`.
-10. Cover: create_market happy path, buy/sell, resolve before/after end_time, claim, double-claim guard, ai update.
+- **Anyone** with a wallet can call `create_market` on the deployed program.
+- The signer of that tx becomes that market's `creator` (stored on the
+  `Market` account), and that grants them — and only them — two privileges
+  scoped to **that single market**:
+  - `resolve_market` (after `end_time`)
+  - `update_ai_confidence`
+- The frontend's `CreatorPanel` reads `market.creator` and only renders
+  resolve / AI-update controls when the connected wallet matches.
 
-### Phase 3 — Devnet deploy
-11. `solana config set --url https://api.devnet.solana.com`
-12. `solana airdrop 2` (might need to retry; faucet rate-limited).
-13. Generate a fresh program keypair if needed; update `declare_id!` and `Anchor.toml [programs.devnet]`.
-14. Set `[provider] cluster = "devnet"` in `Anchor.toml`.
-15. `anchor build && anchor deploy --provider.cluster devnet`.
-16. Mint a mock USDC SPL on devnet for testing (`spl-token create-token --decimals 6` + `create-account` + `mint`).
-
-### Phase 4 — Frontend (Next.js + TypeScript in `app/`)
-17. Scaffold: `npx create-next-app@latest app --typescript --tailwind --eslint --app`.
-18. Install: `@solana/web3.js`, `@coral-xyz/anchor`, `@solana/wallet-adapter-react`, `@solana/wallet-adapter-react-ui`, `@solana/wallet-adapter-wallets`, `@solana/spl-token`.
-19. Wire wallet adapter + connection provider (devnet).
-20. Generate IDL types: `anchor build` produces `target/types/predex.ts` — copy/symlink into `app/lib/idl/`.
-21. Pages:
-    - `/` — list markets (fetch all `Market` accounts via `program.account.market.all()`).
-    - `/market/[pubkey]` — show market detail, buy/sell forms, your position.
-    - `/create` — create_market form.
-    - `/admin` — resolve + ai update (creator-only buttons).
-22. Off-chain: simple Node script or Next API route that polls market questions, calls an LLM, signs `update_ai_confidence` with an oracle keypair.
+So the right mental model is: every market is its own little fiefdom. A
+"platform admin dashboard" doesn't exist because there's nothing platform-wide
+to administer.
 
 ---
 
 ## 4. Sanity Commands
 
-```powershell
-# from repo root
-anchor clean ; cargo clean
+```bash
+# program
+cd ~/solana-projects/predex
+anchor clean && cargo clean
 anchor build
-anchor test --skip-local-validator     # after Phase 2
+anchor test --skip-local-validator     # local-validator integration test
 anchor deploy --provider.cluster devnet
-```
 
-Expected after Phase 1 success: `target/deploy/predex.so`, `target/idl/predex.json`, `target/types/predex.ts`.
+# frontend (in WSL with Node 20+ via nvm)
+cd ~/solana-projects/predex/app
+npm run dev
+npm run build
+```
