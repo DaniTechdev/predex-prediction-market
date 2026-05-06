@@ -18,11 +18,19 @@ import {
  * users to the download page. Show a deep-link option that opens the dApp
  * inside Phantom (or Solflare) where injection works.
  */
+const HAS_WALLETCONNECT = Boolean(
+  process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID,
+);
+
 export function ConnectButton() {
   const { connected } = useWallet();
   const [showMobileHint, setShowMobileHint] = useState(false);
 
   useEffect(() => {
+    // When WalletConnect is configured, the standard wallet modal already
+    // gives mobile users a proper cross-browser flow. The deep-link sheet
+    // only matters as a fallback when WC isn't set up.
+    if (HAS_WALLETCONNECT) return;
     setShowMobileHint(isMobileUA() && !isInWalletBrowser());
   }, []);
 
