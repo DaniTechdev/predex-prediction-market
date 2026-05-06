@@ -71,7 +71,7 @@ function MobileConnect() {
           onClick={() => setOpen(false)}
         >
           <div
-            className="w-full max-w-sm bg-background-elevated border border-border-strong rounded-2xl p-5 shadow-xl"
+            className="w-full max-w-sm bg-background-elevated border border-border-strong rounded-2xl p-5 shadow-xl max-h-[90dvh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="text-center mb-4">
