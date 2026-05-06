@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
-import { Smartphone } from "lucide-react";
+import { useWalletModal } from "@solana/wallet-adapter-react-ui";
+import { Smartphone, Link2 } from "lucide-react";
 import { WalletButton } from "./WalletButton";
 import { Button } from "@/components/ui/Button";
 import {
@@ -12,29 +13,25 @@ import {
   solflareBrowseLink,
 } from "@/lib/mobile";
 
-/**
- * On mobile browsers that aren't Phantom/Solflare's own in-app browser, the
- * standard wallet modal can't detect installed wallet apps and just sends
- * users to the download page. Show a deep-link option that opens the dApp
- * inside Phantom (or Solflare) where injection works.
- */
 const HAS_WALLETCONNECT = Boolean(
   process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID,
 );
 
+/**
+ * On mobile browsers that aren't a wallet's own in-app browser, the
+ * standard wallet modal hides cross-browser options like WalletConnect.
+ * We surface them explicitly: WalletConnect (cross-browser), or open
+ * inside Phantom/Solflare via universal link.
+ */
 export function ConnectButton() {
   const { connected } = useWallet();
-  const [showMobileHint, setShowMobileHint] = useState(false);
+  const [showMobileSheet, setShowMobileSheet] = useState(false);
 
   useEffect(() => {
-    // When WalletConnect is configured, the standard wallet modal already
-    // gives mobile users a proper cross-browser flow. The deep-link sheet
-    // only matters as a fallback when WC isn't set up.
-    if (HAS_WALLETCONNECT) return;
-    setShowMobileHint(isMobileUA() && !isInWalletBrowser());
+    setShowMobileSheet(isMobileUA() && !isInWalletBrowser());
   }, []);
 
-  if (connected || !showMobileHint) {
+  if (connected || !showMobileSheet) {
     return <WalletButton />;
   }
 
@@ -43,6 +40,21 @@ export function ConnectButton() {
 
 function MobileConnect() {
   const [open, setOpen] = useState(false);
+  const { wallets, select } = useWallet();
+  const { setVisible } = useWalletModal();
+
+  const wcAdapter = wallets.find((w) => w.adapter.name === "WalletConnect");
+
+  const handleWalletConnect = () => {
+    if (!wcAdapter) {
+      setVisible(true);
+      setOpen(false);
+      return;
+    }
+    select(wcAdapter.adapter.name);
+    setOpen(false);
+    requestAnimationFrame(() => setVisible(true));
+  };
 
   return (
     <div className="relative">
@@ -63,12 +75,21 @@ function MobileConnect() {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="text-center mb-4">
-              <h3 className="font-semibold text-base">Open in your wallet</h3>
+              <h3 className="font-semibold text-base">Connect wallet</h3>
               <p className="text-sm text-foreground-muted mt-1">
-                Mobile browsers can&apos;t detect wallet apps directly. Tap your wallet to open this site inside it.
+                Pick how you want to connect on mobile.
               </p>
             </div>
             <div className="flex flex-col gap-2">
+              {HAS_WALLETCONNECT && wcAdapter ? (
+                <button
+                  type="button"
+                  onClick={handleWalletConnect}
+                  className="h-12 rounded-[10px] bg-gradient-to-br from-[rgb(59_130_246)] to-[rgb(37_99_235)] text-white font-semibold flex items-center justify-center gap-2 hover:opacity-90 transition-opacity"
+                >
+                  <Link2 className="size-4" /> WalletConnect
+                </button>
+              ) : null}
               <a
                 href={phantomBrowseLink()}
                 className="h-12 rounded-[10px] bg-[#AB9FF2] text-[#1A1A1A] font-semibold flex items-center justify-center gap-2 hover:opacity-90 transition-opacity"
