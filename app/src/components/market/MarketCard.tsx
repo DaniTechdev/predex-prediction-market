@@ -31,22 +31,9 @@ export function MarketCard({ view }: { view: MarketView }) {
       : { label: "Active", tone: "yes" as const };
 
   return (
-    <motion.div
-      whileHover={{ y: -4 }}
-      transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-      className="h-full"
-    >
-      <Link href={`/market/${publicKey.toBase58()}`} className="group block h-full">
-        <Card className="h-full transition-all duration-300 hover:border-accent/50 hover:shadow-[0_18px_48px_-16px_rgb(153_69_255_/_0.45)] relative overflow-hidden">
-          <div
-            aria-hidden
-            className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
-            style={{
-              background:
-                "radial-gradient(circle at 50% 0%, rgb(153 69 255 / 0.12), transparent 60%)",
-            }}
-          />
-          <div className="p-5 sm:p-6 flex flex-col h-full gap-4 relative">
+    <Link href={`/market/${publicKey.toBase58()}`} className="group block h-full">
+      <Card className="h-full diamond-hover">
+        <div className="p-5 sm:p-6 flex flex-col h-full gap-4 relative">
             <div className="flex items-start justify-between gap-3">
               <Badge tone={status.tone}>
                 {status.tone === "yes" ? (
@@ -83,10 +70,9 @@ export function MarketCard({ view }: { view: MarketView }) {
                 </div>
               </div>
             </div>
-          </div>
-        </Card>
-      </Link>
-    </motion.div>
+        </div>
+      </Card>
+    </Link>
   );
 }
 
