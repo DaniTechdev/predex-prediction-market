@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { motion } from "motion/react";
 import {
   Clock,
   ExternalLink,
@@ -197,18 +198,23 @@ function Stat({
   icon?: React.ReactNode;
 }) {
   return (
-    <div className="rounded-[var(--radius-card)] border border-border bg-background-elevated/50 p-4">
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+      className="rounded-[var(--radius-card)] border border-border bg-background-elevated/50 p-4 hover:border-border-strong transition-colors"
+    >
       <div className="text-xs text-foreground-muted flex items-center gap-1">
         {icon} {label}
       </div>
       <div
-        className={`text-xl sm:text-2xl font-bold mt-1 ${
+        className={`text-xl sm:text-2xl font-bold mt-1 tabular-nums ${
           tone === "yes" ? "text-yes" : tone === "no" ? "text-no" : "text-foreground"
         }`}
       >
         {value}
       </div>
-    </div>
+    </motion.div>
   );
 }
 

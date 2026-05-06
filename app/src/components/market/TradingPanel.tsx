@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { BN } from "@coral-xyz/anchor";
 import toast from "react-hot-toast";
+import { motion, LayoutGroup } from "motion/react";
 import { Card, CardBody, CardHeader } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input, Label } from "@/components/ui/Input";
@@ -223,23 +224,32 @@ function Tabs({
   hasPosition: boolean;
 }) {
   return (
-    <div className="grid grid-cols-2 p-1 rounded-[10px] bg-background-overlay border border-border">
-      {(["buy", "sell"] as const).map((t) => (
-        <button
-          key={t}
-          type="button"
-          onClick={() => onChange(t)}
-          disabled={t === "sell" && !hasPosition}
-          className={cn(
-            "h-9 rounded-md text-sm font-medium transition-colors capitalize",
-            value === t ? "bg-background text-foreground shadow-sm" : "text-foreground-muted hover:text-foreground",
-            t === "sell" && !hasPosition && "opacity-50 cursor-not-allowed",
-          )}
-        >
-          {t}
-        </button>
-      ))}
-    </div>
+    <LayoutGroup>
+      <div className="grid grid-cols-2 p-1 rounded-[10px] bg-background-overlay border border-border relative">
+        {(["buy", "sell"] as const).map((t) => (
+          <button
+            key={t}
+            type="button"
+            onClick={() => onChange(t)}
+            disabled={t === "sell" && !hasPosition}
+            className={cn(
+              "relative z-10 h-9 rounded-md text-sm font-medium capitalize transition-colors",
+              value === t ? "text-foreground" : "text-foreground-muted hover:text-foreground",
+              t === "sell" && !hasPosition && "opacity-50 cursor-not-allowed",
+            )}
+          >
+            {value === t ? (
+              <motion.span
+                layoutId="trade-tab"
+                className="absolute inset-0 -z-0 rounded-md bg-background shadow-[0_2px_8px_-2px_rgb(0_0_0_/_0.4)]"
+                transition={{ type: "spring", stiffness: 380, damping: 30 }}
+              />
+            ) : null}
+            <span className="relative">{t}</span>
+          </button>
+        ))}
+      </div>
+    </LayoutGroup>
   );
 }
 
@@ -257,19 +267,20 @@ function OutcomeButton({
   tone: "yes" | "no";
 }) {
   return (
-    <button
+    <motion.button
       type="button"
       onClick={onClick}
+      whileTap={{ scale: 0.98 }}
       className={cn(
-        "rounded-[10px] border p-3 text-left transition-all",
-        active && tone === "yes" && "border-yes bg-yes/10",
-        active && tone === "no" && "border-no bg-no/10",
+        "rounded-[10px] border p-3 text-left transition-colors",
+        active && tone === "yes" && "border-yes bg-yes/10 shadow-[0_0_22px_-8px_rgb(20_241_149_/_0.6)]",
+        active && tone === "no" && "border-no bg-no/10 shadow-[0_0_22px_-8px_rgb(248_113_113_/_0.6)]",
         !active && "border-border-strong bg-background-overlay hover:border-foreground-faint",
       )}
     >
       <div className={cn("text-xs font-medium", tone === "yes" ? "text-yes" : "text-no")}>{label}</div>
-      <div className="text-lg font-bold mt-0.5">{formatProbability(price * 100)}</div>
-    </button>
+      <div className="text-lg font-bold mt-0.5 tabular-nums">{formatProbability(price * 100)}</div>
+    </motion.button>
   );
 }
 

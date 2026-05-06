@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { usePathname } from "next/navigation";
 import { Menu, X, TrendingUp } from "lucide-react";
+import { motion } from "motion/react";
 import { ConnectButton } from "./ConnectButton";
 import { cn } from "@/lib/cn";
 import { SITE } from "@/lib/config";
@@ -23,9 +24,13 @@ export function Navbar() {
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
         <div className="h-16 flex items-center justify-between gap-4">
           <Link href="/" className="flex items-center gap-2.5 group" onClick={() => setOpen(false)}>
-            <div className="size-8 rounded-lg bg-gradient-to-br from-[rgb(153_69_255)] to-[rgb(20_241_149)] flex items-center justify-center shadow-[0_0_18px_-3px_rgb(153_69_255_/_0.6)] group-hover:shadow-[0_0_22px_-2px_rgb(153_69_255_/_0.8)] transition-shadow">
+            <motion.div
+              whileHover={{ rotate: -8, scale: 1.06 }}
+              transition={{ type: "spring", stiffness: 400, damping: 16 }}
+              className="size-8 rounded-lg bg-gradient-to-br from-[rgb(153_69_255)] to-[rgb(20_241_149)] flex items-center justify-center shadow-[0_0_18px_-3px_rgb(153_69_255_/_0.6)] group-hover:shadow-[0_0_24px_-2px_rgb(153_69_255_/_0.85)] transition-shadow"
+            >
               <TrendingUp className="size-4 text-white" strokeWidth={2.5} />
-            </div>
+            </motion.div>
             <span className="font-bold text-lg tracking-tight">{SITE.name}</span>
           </Link>
 

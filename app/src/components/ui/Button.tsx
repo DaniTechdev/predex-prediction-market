@@ -1,18 +1,21 @@
+"use client";
+
 import { type ButtonHTMLAttributes, forwardRef } from "react";
+import { motion, type HTMLMotionProps } from "motion/react";
 import { cn } from "@/lib/cn";
 
 type Variant = "primary" | "secondary" | "ghost" | "yes" | "no" | "outline";
 type Size = "sm" | "md" | "lg";
 
-interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+type ButtonProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, "onAnimationStart" | "onDragStart" | "onDragEnd" | "onDrag"> & {
   variant?: Variant;
   size?: Size;
   loading?: boolean;
-}
+};
 
 const variantStyles: Record<Variant, string> = {
   primary:
-    "bg-gradient-to-br from-[rgb(153_69_255)] to-[rgb(123_49_219)] text-white shadow-[0_4px_20px_-4px_rgb(153_69_255_/_0.5)] hover:shadow-[0_6px_28px_-4px_rgb(153_69_255_/_0.7)] hover:-translate-y-px active:translate-y-0",
+    "bg-gradient-to-br from-[rgb(153_69_255)] to-[rgb(123_49_219)] text-white shadow-[0_4px_24px_-4px_rgb(153_69_255_/_0.55)] hover:shadow-[0_8px_36px_-4px_rgb(153_69_255_/_0.75)]",
   secondary:
     "bg-background-overlay text-foreground border border-border-strong hover:bg-[rgb(var(--border-strong))]",
   ghost:
@@ -20,9 +23,9 @@ const variantStyles: Record<Variant, string> = {
   outline:
     "bg-transparent text-foreground border border-border-strong hover:border-foreground-faint hover:bg-background-overlay",
   yes:
-    "bg-gradient-to-br from-[rgb(20_241_149)] to-[rgb(10_180_110)] text-[rgb(6_8_14)] shadow-[0_4px_20px_-4px_rgb(20_241_149_/_0.5)] hover:shadow-[0_6px_28px_-4px_rgb(20_241_149_/_0.7)] hover:-translate-y-px",
+    "bg-gradient-to-br from-[rgb(20_241_149)] to-[rgb(10_180_110)] text-[rgb(6_8_14)] shadow-[0_4px_24px_-4px_rgb(20_241_149_/_0.55)] hover:shadow-[0_8px_36px_-4px_rgb(20_241_149_/_0.75)]",
   no:
-    "bg-gradient-to-br from-[rgb(248_113_113)] to-[rgb(220_60_60)] text-white shadow-[0_4px_20px_-4px_rgb(248_113_113_/_0.5)] hover:shadow-[0_6px_28px_-4px_rgb(248_113_113_/_0.7)] hover:-translate-y-px",
+    "bg-gradient-to-br from-[rgb(248_113_113)] to-[rgb(220_60_60)] text-white shadow-[0_4px_24px_-4px_rgb(248_113_113_/_0.55)] hover:shadow-[0_8px_36px_-4px_rgb(248_113_113_/_0.75)]",
 };
 
 const sizeStyles: Record<Size, string> = {
@@ -36,21 +39,24 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
   ref,
 ) {
   return (
-    <button
+    <motion.button
       ref={ref}
       disabled={disabled || loading}
+      whileHover={disabled || loading ? undefined : { y: -1 }}
+      whileTap={disabled || loading ? undefined : { scale: 0.98 }}
+      transition={{ type: "spring", stiffness: 400, damping: 28 }}
       className={cn(
-        "inline-flex items-center justify-center gap-2 rounded-[10px] font-semibold transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none",
+        "inline-flex items-center justify-center gap-2 rounded-[10px] font-semibold transition-[background,border-color,box-shadow,opacity,color] duration-200 disabled:opacity-50 disabled:cursor-not-allowed",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:ring-offset-2 focus-visible:ring-offset-background",
         variantStyles[variant],
         sizeStyles[size],
         className,
       )}
-      {...rest}
+      {...(rest as HTMLMotionProps<"button">)}
     >
       {loading ? <Spinner /> : null}
       {children}
-    </button>
+    </motion.button>
   );
 });
 
