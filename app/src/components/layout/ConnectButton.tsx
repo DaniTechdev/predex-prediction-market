@@ -137,25 +137,16 @@ function DisconnectedSheet({
       <div className="text-center mb-4">
         <h3 className="font-semibold text-base">Connect wallet</h3>
         <p className="text-sm text-foreground-muted mt-1">
-          Pick how you want to connect on mobile.
+          Open this dApp inside your wallet to connect and sign on mobile.
         </p>
       </div>
       <div className="flex flex-col gap-2">
-        {showWalletConnect ? (
-          <button
-            type="button"
-            onClick={onWalletConnect}
-            className="h-12 rounded-[10px] bg-gradient-to-br from-[rgb(59_130_246)] to-[rgb(37_99_235)] text-white font-semibold flex items-center justify-center gap-2 hover:opacity-90 transition-opacity"
-          >
-            <Link2 className="size-4" /> WalletConnect
-            <span className="text-xs font-normal opacity-80 ml-1">stays in your browser</span>
-          </button>
-        ) : null}
         <a
           href={phantomBrowseLink()}
           className="h-12 rounded-[10px] bg-[#AB9FF2] text-[#1A1A1A] font-semibold flex items-center justify-center gap-2 hover:opacity-90 transition-opacity"
         >
           Open in Phantom
+          <span className="text-xs font-normal opacity-70 ml-1">recommended</span>
         </a>
         <a
           href={solflareBrowseLink()}
@@ -163,6 +154,16 @@ function DisconnectedSheet({
         >
           Open in Solflare
         </a>
+        {showWalletConnect ? (
+          <button
+            type="button"
+            onClick={onWalletConnect}
+            className="h-11 rounded-[10px] bg-background-overlay border border-border-strong text-foreground-muted text-sm font-medium flex items-center justify-center gap-2 hover:text-foreground hover:border-foreground-faint transition-colors"
+          >
+            <Link2 className="size-3.5" /> WalletConnect
+            <span className="text-xs font-normal opacity-70">desktop QR · experimental on mobile</span>
+          </button>
+        ) : null}
         <button
           type="button"
           onClick={onClose}
