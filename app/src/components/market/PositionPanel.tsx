@@ -16,6 +16,7 @@ import {
   fromShareRaw,
   fromUsdcRaw,
 } from "@/lib/format";
+import { parseTxError } from "@/lib/errors";
 import type { MarketView } from "@/hooks/useMarkets";
 
 export function PositionPanel({
@@ -70,7 +71,7 @@ export function PositionPanel({
         {
           loading: "Claiming…",
           success: `Claimed ~$${formatUsdc(estPayout)}`,
-          error: (err: Error) => err.message,
+          error: (err: Error) => parseTxError(err),
         },
       );
       await Promise.all([

@@ -11,6 +11,7 @@ import { Input, Label } from "@/components/ui/Input";
 import { useProgram } from "@/hooks/useProgram";
 import { resolveMarket, updateAiConfidence } from "@/lib/tx";
 import { formatRelativeTime } from "@/lib/format";
+import { parseTxError } from "@/lib/errors";
 import type { MarketView } from "@/hooks/useMarkets";
 
 export function CreatorPanel({
@@ -64,7 +65,7 @@ function ResolveSection({
         {
           loading: "Resolving…",
           success: `Resolved as ${winning === 0 ? "YES" : "NO"}`,
-          error: (err: Error) => err.message,
+          error: (err: Error) => parseTxError(err),
         },
       );
       await queryClient.invalidateQueries({ queryKey: ["market"] });
@@ -156,7 +157,7 @@ function AiSection({
         {
           loading: "Updating AI signal…",
           success: "AI signal updated",
-          error: (err: Error) => err.message,
+          error: (err: Error) => parseTxError(err),
         },
       );
       await queryClient.invalidateQueries({ queryKey: ["market"] });

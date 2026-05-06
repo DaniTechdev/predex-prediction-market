@@ -13,6 +13,7 @@ import { ConnectGate } from "@/components/layout/ConnectGate";
 import { useProgram } from "@/hooks/useProgram";
 import { createMarket, newMarketId } from "@/lib/tx";
 import { marketPda } from "@/lib/pdas";
+import { parseTxError } from "@/lib/errors";
 
 export default function CreateMarketPage() {
   return (
@@ -73,7 +74,7 @@ function CreateMarketForm() {
       await toast.promise(promise, {
         loading: "Creating market…",
         success: "Market created",
-        error: (err: Error) => `Failed: ${err.message}`,
+        error: (err: Error) => parseTxError(err),
       });
       await queryClient.invalidateQueries({ queryKey: ["markets"] });
       router.push(`/market/${market.toBase58()}`);

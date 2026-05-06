@@ -19,6 +19,7 @@ import {
   toUsdcRaw,
 } from "@/lib/format";
 import { cn } from "@/lib/cn";
+import { parseTxError } from "@/lib/errors";
 import type { MarketView } from "@/hooks/useMarkets";
 import { usePosition } from "@/hooks/usePosition";
 
@@ -117,7 +118,7 @@ function TradeForm({
       await toast.promise(promise, {
         loading: tab === "buy" ? "Buying shares…" : "Selling shares…",
         success: tab === "buy" ? "Shares purchased" : "Shares sold",
-        error: (err: Error) => parseAnchorError(err),
+        error: (err: Error) => parseTxError(err),
       });
       setAmount("");
       await Promise.all([
@@ -281,9 +282,3 @@ function Row({ label, value }: { label: string; value: string }) {
   );
 }
 
-function parseAnchorError(err: Error): string {
-  const msg = err?.message ?? String(err);
-  const match = msg.match(/Error: ([A-Za-z]+)/);
-  if (match?.[1]) return match[1];
-  return msg.length > 80 ? `${msg.slice(0, 80)}…` : msg;
-}
